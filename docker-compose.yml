@@ -1,4 +1,4 @@
-version: "3"
+version: "3.3"
 
 networks:
   www-network:
@@ -10,46 +10,44 @@ services:
       - ./docker_system/database/db_data:/var/lib/mysql
       - ./docker_system/database/db_backup:/var/lib/mysql-db-backup
     environment:
-      - MYSQL_DATABASE: "product"
-      - MYSQL_USER: "dinhvan"
-      - MYSQL_PASSWORD: "vanit@1992"
-      - MYSQL_ROOT_PASSWORD: "vanit@1992"
+      MYSQL_DATABASE: "apiconext"
+      MYSQL_ROOT_PASSWORD: "vanit@1992"
     ports:
       - "4306:3306"
     networks:
       - www-network
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
+    ports:
+      - "2020:80"
     environment:
-      - MYSQL_USER: "dinhvan"
-      - MYSQL_PASSWORD: "vanit@1992"
-      - MYSQL_ROOT_PASSWORD: "vanit@1992"
+      MYSQL_ROOT_PASSWORD: "vanit@1992"
     links:
-      - mysql
+      - mysql:db
     networks:
-      - www-network
+      www-network:
   nginx:
     build:
-      context: ./nginx
-      volumes:
-        - ./:/var/www
-        - ./docker_system/nginx/conf.d:/etc/nginx/conf.d
-      labels:
-        traefik.enable: true
-        traefik.http.routers.web.rule: Host(`apiconext.thongtinketoan.com`)
-        traefik.http.routers.web.entrypoints: websecure
-        traefik.http.routers.web.tls.certresolver: myresolver
-      networks:
-        - www-network
+      context: ./docker_system/nginx
+    volumes:
+      - ./:/var/www
+      - ./docker_system/nginx/conf.d:/etc/nginx/conf.d
+    labels:
+      traefik.enable: true
+      traefik.http.routers.web.rule: Host(`apiconext.thongtinketoan.com`)
+      traefik.http.routers.web.entrypoints: websecure
+      traefik.http.routers.web.tls.certresolver: myresolver
+    networks:
+      www-network:
     depends_on:
       - "mysql"
   php-fpm:
     build:
       context: ./docker_system/php-fpm/
     volumes:
-      - ./docker_system/php-fpm:/var/www
+      - ./:/var/www
     working_dir: /var/www
     networks:
-      - www-network
+      www-network:
     depends_on:
       - "mysql"
