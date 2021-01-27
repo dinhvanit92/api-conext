@@ -1,53 +1,43 @@
-version: "3.3"
+version: "3.9"
 
 networks:
   www-network:
     external: true
 services:
-  mysql:
-    image: mysql:8
+  webserver:
+    build: ./
     volumes:
-      - ./docker_system/database/db_data:/var/lib/mysql
-      - ./docker_system/database/db_backup:/var/lib/mysql-db-backup
+      - ./:/var/www/html
     environment:
-      MYSQL_DATABASE: "apiconext"
-      MYSQL_ROOT_PASSWORD: "vanit@1992"
-    ports:
-      - "4306:3306"
-    networks:
-      - www-network
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin:latest
-    ports:
-      - "2020:80"
-    environment:
-      MYSQL_ROOT_PASSWORD: "vanit@1992"
-    links:
-      - mysql:db
-    networks:
-      www-network:
-  nginx:
-    build:
-      context: ./docker_system/nginx
-    volumes:
-      - ./:/var/www
-      - ./docker_system/nginx/conf.d:/etc/nginx/conf.d
+      XDEBUG_CONFIG: remote_host=host.docker.internal
     labels:
       traefik.enable: true
-      traefik.http.routers.web.rule: Host(`apiconext.thongtinketoan.com`)
+      traefik.http.routers.web.rule: Host(`api.thongtinketoan.com`)
       traefik.http.routers.web.entrypoints: websecure
       traefik.http.routers.web.tls.certresolver: myresolver
     networks:
       www-network:
-    depends_on:
-      - "mysql"
-  php-fpm:
-    build:
-      context: ./docker_system/php-fpm/
+  db:
+    image: mysql:8
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: apiconext
+      MYSQL_ROOT_PASSWORD: vanit@1992
     volumes:
-      - ./:/var/www
-    working_dir: /var/www
+      - ./dump:/docker-entrypoint-initdb.d
+      - persistent:/var/lib/mysql
     networks:
       www-network:
-    depends_on:
-      - "mysql"
+  phpmyroot:
+    image: phpmyadmin/phpmyadmin
+    links:
+      - db:db
+    ports:
+      - 8081:80
+    environment:
+      MYSQL_ROOT_PASSWORD: vanit@1992
+    networks:
+      www-network:
+volumes:
+  persistent:

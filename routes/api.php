@@ -21,3 +21,5 @@ Route::post('register', 'Api\AuthController@register');
 Route::post('login', 'Api\AuthController@login');
 
 Route::apiResource('countries', 'CountryController');
+
+Route::get('alluser', 'UserController@index')->middleware('auth:api');
