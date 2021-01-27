@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use GuzzleHttp\Client;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\OauthTokens;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -37,7 +38,13 @@ class AuthController extends Controller
     {
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             $oClient = OClient::where('password_client', 1)->first();
-            return $this->getTokenAndRefreshToken($oClient, request('email'), request('password'));
+            $data = $this->getTokenAndRefreshToken($oClient, request('email'), request('password'));
+            // $add = json_decode($data);
+            $updateRefreshToken = User::where('email',$request->email);
+            // dd($add);
+            // $updateRefreshToken->remember_token = $add['refresh_token'];
+            // $updateRefreshToken->save();
+            return $data;
         } else {
             return response()->json(['error' => 'Unauthorised'], 401);
         }
@@ -58,6 +65,14 @@ class AuthController extends Controller
         ]);
 
         $result = json_decode((string) $response->getBody(), true);
+        $data = auth()->user()->id;
+        // dd($data);
+        OauthTokens::create([
+            'user_id' => $data,
+            'access_token' => $result['access_token'],
+            'expires_in' => $result['expires_in'],
+            'refresh_token' => $result['refresh_token']
+        ]);
         return response()->json($result, $this->successStatus);
     }
 }
